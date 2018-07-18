@@ -250,24 +250,21 @@ defmodule Exq.Manager.Server do
   def dequeue_and_dispatch(state), do: dequeue_and_dispatch(state, available_queues(state))
   def dequeue_and_dispatch(state, []), do: {state, state.poll_timeout}
   def dequeue_and_dispatch(state, queues) do
-    dequeuer = Task.async(fn ->
-      rescue_timeout({state, state.poll_timeout}, fn ->
-        jobs = Exq.Redis.JobQueue.dequeue(state.redis, state.namespace, state.node_id, queues)
+    rescue_timeout({state, state.poll_timeout}, fn ->
+      jobs = Exq.Redis.JobQueue.dequeue(state.redis, state.namespace, state.node_id, queues)
 
-        job_results = jobs |> Enum.map(fn(potential_job) -> dispatch_job(state, potential_job) end)
+      job_results = jobs |> Enum.map(fn(potential_job) -> dispatch_job(state, potential_job) end)
 
-          cond do
-            Enum.any?(job_results, fn(status) -> elem(status, 1) == :dispatch end) ->
-              {state, 0}
-            Enum.any?(job_results, fn(status) -> elem(status, 0) == :error end) ->
-              Logger.error("Redis Error #{Kernel.inspect(job_results)}}.  Backing off...")
-              {state, state.poll_timeout * @backoff_mult}
-            true ->
-              {state, state.poll_timeout}
-          end
-      end)
+      cond do
+        Enum.any?(job_results, fn(status) -> elem(status, 1) == :dispatch end) ->
+          {state, 0}
+        Enum.any?(job_results, fn(status) -> elem(status, 0) == :error end) ->
+          Logger.error("Redis Error #{Kernel.inspect(job_results)}}.  Backing off...")
+          {state, state.poll_timeout * @backoff_mult}
+        true ->
+          {state, state.poll_timeout}
+      end
     end)
-    Task.await(dequeuer, :infinity)
   end
 
   @doc """
