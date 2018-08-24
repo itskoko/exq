@@ -22,12 +22,15 @@ defmodule MemoryTest do
 
   @tag timeout: :infinity
   test "test memory bloat" do
+    Mix.Config.persist([exq: [scheduler_page_size: 100]])
     starting_memory = :erlang.memory(:total)
 
     Process.register(self(), :tester)
 
+    large_message = Enum.reduce(1..10_000, "", fn _, acc -> acc <> "." end)
+
     {:ok, sup} = Exq.start_link(scheduler_enable: true)
-    for _ <- 1..10_000, do: Exq.enqueue_in(Exq, "default", 5, MemoryTest.Worker, [Enum.reduce(1..10_000, "", fn _, acc -> acc <> "." end)])
+    for _ <- 1..100_000, do: Exq.enqueue_in(Exq, "default", 5, MemoryTest.Worker, [large_message])
     Exq.enqueue_in(Exq, "default", 5, MemoryTest.Worker, ["last"])
 
     # Wait for last message
