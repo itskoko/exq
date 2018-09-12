@@ -27,13 +27,18 @@ defmodule Exq.Support.Mode do
     children = [
       worker(Exq.Worker.Metadata, [opts]),
       worker(Exq.Middleware.Server, [opts]),
-      worker(Exq.Stats.Server, [opts]),
       supervisor(Exq.Worker.Supervisor, [opts]),
       worker(Exq.Manager.Server, [opts]),
       worker(Exq.WorkerDrainer.Server, [opts], shutdown: shutdown_timeout),
       worker(Exq.Enqueuer.Server, [opts]),
       worker(Exq.Api.Server, [opts])
     ]
+
+    children =  if opts[:stats_enable] do
+      children ++ [worker(Exq.Stats.Server, [opts])]
+    else
+      children
+    end
 
     if opts[:scheduler_enable] do
       children ++ [worker(Exq.Scheduler.Server, [opts])]

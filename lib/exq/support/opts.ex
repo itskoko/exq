@@ -66,11 +66,13 @@ defmodule Exq.Support.Opts do
   end
 
   defp server_opts(:default, opts) do
-    scheduler_enable = opts[:scheduler_enable] || Config.get(:scheduler_enable)
-    namespace = opts[:namespace] || Config.get(:namespace)
-    scheduler_poll_timeout = opts[:scheduler_poll_timeout] || Config.get(:scheduler_poll_timeout)
-    poll_timeout = opts[:poll_timeout] || Config.get(:poll_timeout)
-    shutdown_timeout = opts[:shutdown_timeout] || Config.get(:shutdown_timeout)
+    scheduler_enable = opt_or_config(opts, :scheduler_enable)
+    stats_enable = opt_or_config(opts, :stats_enable)
+
+    namespace = opt_or_config(opts, :namespace)
+    scheduler_poll_timeout = opt_or_config(opts, :scheduler_poll_timeout)
+    poll_timeout = opt_or_config(opts, :poll_timeout)
+    shutdown_timeout = opt_or_config(opts, :shutdown_timeout)
 
     enqueuer = Exq.Enqueuer.Server.server_name(opts[:name])
     stats = Exq.Stats.Server.server_name(opts[:name])
@@ -79,13 +81,13 @@ defmodule Exq.Support.Opts do
     middleware = Exq.Middleware.Server.server_name(opts[:name])
     metadata = Exq.Worker.Metadata.server_name(opts[:name])
 
-    queue_configs = opts[:queues] || Config.get(:queues)
-    per_queue_concurrency = opts[:concurrency] || Config.get(:concurrency)
+    queue_configs = opt_or_config(opts, :queues)
+    per_queue_concurrency = opt_or_config(opts, :concurrency)
     queues = get_queues(queue_configs)
     concurrency = get_concurrency(queue_configs, per_queue_concurrency)
     default_middleware = Config.get(:middleware)
 
-    [scheduler_enable: scheduler_enable, namespace: namespace,
+    [scheduler_enable: scheduler_enable, stats_enable: stats_enable, namespace: namespace,
      scheduler_poll_timeout: scheduler_poll_timeout,workers_sup: workers_sup,
      poll_timeout: poll_timeout, enqueuer: enqueuer, metadata: metadata,
      stats: stats, name: opts[:name], scheduler: scheduler, queues:
@@ -94,8 +96,17 @@ defmodule Exq.Support.Opts do
      mode: :default, shutdown_timeout: shutdown_timeout]
   end
   defp server_opts(mode, opts) do
-    namespace = opts[:namespace] || Config.get(:namespace)
+    namespace = opt_or_config(opts, :namespace)
     [name: opts[:name], namespace: namespace, redis: opts[:redis], mode: mode]
+  end
+
+  defp opt_or_config(opts, key) do
+    case opts[key] do
+      nil ->
+        Config.get(key)
+      opt ->
+        opt
+    end
   end
 
   defp get_queues(queue_configs) do

@@ -40,6 +40,7 @@ defmodule Exq.Mixfile do
       { :excoveralls, "~> 0.6", only: :test },
       { :redix_sentinel, "~> 0.5.0", only: :test },
       { :flaky_connection, git: "https://github.com/hamiltop/flaky_connection.git", only: :test},
+      { :recon, "~> 2.3.6", only: :test },
 
       # docs
       {:ex_doc, "~> 0.10", only: :dev},

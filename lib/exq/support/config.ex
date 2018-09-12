@@ -9,6 +9,7 @@ defmodule Exq.Support.Config do
     database: 0,
     queues: ["default"],
     scheduler_enable: true,
+    stats_enable: true,
     concurrency: 100,
     scheduler_poll_timeout: 200,
     scheduler_page_size: 10,

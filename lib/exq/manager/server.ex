@@ -29,6 +29,7 @@ defmodule Exq.Manager.Server do
     * `:poll_timeout` - How often to poll Redis for jobs.
     * `:scheduler_enable` - Whether scheduler / retry process should be enabled. This defaults
       to true.  Note that is you turn this off, job retries will not be enqueued.
+    * `:stats_enable` - Whether stats server should be enabled. This defaults to true.
     * `:scheduler_poll_timeout` - How often to poll Redis for scheduled / retry jobs.
 
   ## Redis Options (TODO - move to supervisor after refactor):
@@ -218,7 +219,9 @@ defmodule Exq.Manager.Server do
   """
   def handle_cast(:cleanup_host_stats, state) do
     rescue_timeout(fn ->
-      Exq.Stats.Server.cleanup_host_stats(state.stats, state.namespace, state.node_id)
+      if Process.whereis(state.stats) do
+        Exq.Stats.Server.cleanup_host_stats(state.stats, state.namespace, state.node_id)
+      end
     end)
     {:noreply, state, 0}
   end
